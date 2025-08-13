@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt魔法师 - 幻灯片查看器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .viewer-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a5d8ff;
+        }
+
+        .slide-info {
+            font-size: 14px;
+            color: #e0f2fe;
+        }
+
+        .slide-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        .slide-frame {
+            width: 1280px;
+            height: 720px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 1;
+        }
+
+        .slide-frame.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .slide-frame.preload {
+            opacity: 0;
+            z-index: 0;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #a5d8ff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn:disabled:hover {
+            transform: none;
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 0 20px;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .slide-indicators {
+            display: flex;
+            gap: 8px;
+            margin: 0 20px;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .indicator.active {
+            background: #3b82f6;
+            transform: scale(1.2);
+        }
+
+        .indicator:hover {
+            background: #60a5fa;
+        }
+
+        .fullscreen-btn {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #6ee7b7;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #a5d8ff;
+            font-size: 18px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(165, 216, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #a5d8ff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 全屏模式样式 */
+        .fullscreen .slide-frame {
+            width: 100vw;
+            height: 100vh;
+            transform: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            border: none;
+            border-radius: 0;
+        }
+
+        .fullscreen .slide-frame.active {
+            z-index: 2;
+        }
+
+        .fullscreen .slide-frame.preload {
+            z-index: 0;
+        }
+
+        .fullscreen .header {
+            display: none;
+        }
+
+        .fullscreen .controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        .fullscreen .controls.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .fullscreen .controls:hover {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .fullscreen .control-btn {
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .fullscreen .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .fullscreen .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .fullscreen .progress-fill {
+            background: #007bff;
+        }
+
+        .fullscreen .slide-container {
+            height: 100vh;
+            background: #000;
+        }
+
+
+
+        /* 导出按钮样式 */
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: 1px solid #28a745;
+            min-width: 60px;
+        }
+
+        .export-btn:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            border-color: #1e7e34;
+            transform: translateY(-1px);
+        }
+
+        .export-btn:disabled {
+            background: #6c757d;
+            border-color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .link-btn {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #6ee7b7;
+        }
+
+        .link-btn:hover {
+            background: rgba(16, 185, 129, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .github-btn {
+            background: rgba(88, 28, 135, 0.2);
+            border: 1px solid #7c3aed;
+            color: #c4b5fd;
+        }
+
+        .github-btn:hover {
+            background: rgba(88, 28, 135, 0.4);
+        }
+
+        .feishu-btn {
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+
+        .feishu-btn:hover {
+            background: rgba(245, 101, 101, 0.4);
+        }
+
+        /* 导出进度提示样式 */
+        .export-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .export-progress-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .export-progress .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .export-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .export-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .export-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #28a745);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .export-percentage {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .slide-frame {
+                width: min(90vw, 1280px);
+                height: calc(min(90vw, 1280px) * 0.5625); /* 保持16:9比例 */
+                max-height: calc(100vh - 200px); /* 为头部和控制栏留出空间 */
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .slide-frame {
+                width: 95vw;
+                height: calc(95vw * 0.5625);
+                max-height: calc(100vh - 180px);
+            }
+            
+            .header {
+                padding: 8px 15px;
+            }
+            
+            .title {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide-frame {
+                width: 98vw;
+                height: calc(98vw * 0.5625);
+                max-height: calc(100vh - 160px);
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 10px 15px;
+            }
+            
+            .progress-container {
+                order: -1;
+                width: 100%;
+                justify-content: center;
+                margin: 0 0 10px 0;
+            }
+            
+            .slide-indicators {
+                margin: 0;
+                order: -1;
+            }
+            
+            .control-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slide-frame {
+                width: 100vw;
+                height: calc(100vw * 0.5625);
+                max-height: calc(100vh - 140px);
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 5px 10px;
+            }
+            
+            .title {
+                font-size: 14px;
+            }
+            
+            .slide-info {
+                font-size: 12px;
+            }
+            
+            .control-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer-container" id="viewerContainer">
+        <div class="header">
+            <div class="title">Prompt魔法师：从实践到创造，我的AI指令探索之旅</div>
+            <div class="slide-info">
+                <span id="currentSlide">1</span> / <span id="totalSlides">10</span>
+            </div>
+        </div>
+
+        <div class="slide-container">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                加载中...
+            </div>
+            <iframe 
+                id="slideFrame" 
+                class="slide-frame active" 
+                src="1.html"
+            ></iframe>
+            <iframe 
+                id="slideFrameNext" 
+                class="slide-frame preload"
+            ></iframe>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="prevBtn" onclick="previousSlide()">
+                <i class="fas fa-chevron-left"></i>
+                上一页
+            </button>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="progressText">10%</span>
+            </div>
+
+            <div class="slide-indicators" id="indicators">
+                <!-- 动态生成指示器 -->
+            </div>
+
+            <button class="control-btn" id="nextBtn" onclick="nextSlide()">
+                下一页
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <button class="control-btn fullscreen-btn" onclick="toggleFullscreen()">
+                <i class="fas fa-expand"></i>
+                全屏
+            </button>
+
+            <div class="export-buttons">
+                <button class="control-btn export-btn" onclick="exportToPDF()" title="导出为PDF">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF
+                </button>
+                <button class="control-btn export-btn" onclick="exportToPPT()" title="导出为PPT">
+                    <i class="fas fa-file-powerpoint"></i>
+                    PPT
+                </button>
+                <a href="https://gitcode.com/huqi/prompt_share.git" target="_blank" class="control-btn link-btn github-btn" title="查看GitHub源码">
+                     <i class="fab fa-github"></i>
+                 </a>
+                 <a href="https://vxkeohee2mi.feishu.cn/wiki/AMkiwu7fjiBVjukb9ZCcc0PAnyc?from=from_copylink" target="_blank" class="control-btn link-btn feishu-btn" title="查看飞书文档">
+                     <i class="fas fa-file-alt"></i>
+                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出进度提示 -->
+    <div class="export-progress" id="exportProgress" style="display: none;">
+        <div class="export-progress-content">
+            <div class="spinner"></div>
+            <div class="export-text" id="exportText">正在导出...</div>
+            <div class="export-bar">
+                <div class="export-bar-fill" id="exportBarFill"></div>
+            </div>
+            <div class="export-percentage" id="exportPercentage">0%</div>
+        </div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.min.js"></script>
+
+    <script>
+        let currentSlideIndex = 1;
+        const totalSlides = 10;
+        
+        // 获取DOM元素
+        const viewerContainer = document.getElementById('viewerContainer');
+        let slideFrame = document.getElementById('slideFrame');
+        let slideFrameNext = document.getElementById('slideFrameNext');
+        const loading = document.getElementById('loading');
+        const currentSlideSpan = document.getElementById('currentSlide');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        // 预加载状态
+        let isTransitioning = false;
+        let preloadedSlide = null;
+
+        // 初始化
+        function init() {
+            createIndicators();
+            updateUI();
+            
+            // 确保第一张幻灯片正确显示
+            slideFrame.classList.add('active');
+            slideFrameNext.classList.add('preload');
+            
+            // 隐藏初始加载状态
+            setTimeout(() => {
+                hideLoading();
+            }, 1000);
+            
+            // 初始化时预加载相邻幻灯片
+            setTimeout(() => {
+                preloadAdjacentSlides();
+            }, 1500);
+            
+            // 初始化时调整幻灯片尺寸
+            setTimeout(() => {
+                adjustSlideSize();
+            }, 100);
+        }
+
+        // 创建指示器
+        function createIndicators() {
+            const indicatorsContainer = document.getElementById('indicators');
+            for (let i = 1; i <= totalSlides; i++) {
+                const indicator = document.createElement('div');
+                indicator.className = 'indicator';
+                indicator.onclick = () => goToSlide(i);
+                indicatorsContainer.appendChild(indicator);
+            }
+        }
+
+        // 预加载下一张幻灯片
+        function preloadSlide(slideNumber) {
+            if (slideNumber >= 1 && slideNumber <= totalSlides && slideNumber !== currentSlideIndex) {
+                slideFrameNext.src = `${slideNumber}.html`;
+                preloadedSlide = slideNumber;
+            }
+        }
+
+        // 加载幻灯片（带平滑切换）
+        function loadSlide(slideNumber) {
+            if (isTransitioning) return;
+            
+            isTransitioning = true;
+            
+            // 清除之前的预加载状态，确保加载正确的幻灯片
+            preloadedSlide = null;
+            
+            // 显示加载状态并加载到预加载iframe
+            showLoading();
+            slideFrameNext.src = `${slideNumber}.html`;
+            
+            // 等待加载完成后切换
+            slideFrameNext.onload = () => {
+                adjustSlideSize();
+                switchToPreloadedSlide();
+                slideFrameNext.onload = null; // 清除事件监听器
+            };
+        }
+
+        // 切换到预加载的幻灯片（使用CSS过渡）
+        function switchToPreloadedSlide() {
+            // 交换两个iframe的显示状态
+            slideFrame.classList.remove('active');
+            slideFrame.classList.add('preload');
+            
+            slideFrameNext.classList.remove('preload');
+            slideFrameNext.classList.add('active');
+            
+            // 交换iframe引用（但不修改DOM）
+            const temp = slideFrame;
+            slideFrame = slideFrameNext;
+            slideFrameNext = temp;
+            
+            hideLoading();
+            
+            // 延迟重置状态，确保切换完成
+            setTimeout(() => {
+                isTransitioning = false;
+                preloadAdjacentSlides();
+            }, 100); // 缩短延迟时间，提高响应性
+        }
+
+        // 预加载相邻幻灯片
+        function preloadAdjacentSlides() {
+            const nextSlide = currentSlideIndex < totalSlides ? currentSlideIndex + 1 : null;
+            const prevSlide = currentSlideIndex > 1 ? currentSlideIndex - 1 : null;
+            
+            // 优先预加载下一张
+            if (nextSlide) {
+                preloadSlide(nextSlide);
+            } else if (prevSlide) {
+                preloadSlide(prevSlide);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            loading.style.display = 'none';
+            // 不在这里设置isTransitioning = false，让切换函数控制
+        }
+
+        // 更新UI
+        function updateUI() {
+            currentSlideSpan.textContent = currentSlideIndex;
+            
+            // 更新进度条
+            const progress = (currentSlideIndex / totalSlides) * 100;
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${Math.round(progress)}%`;
+            
+            // 更新按钮状态
+            prevBtn.disabled = currentSlideIndex === 1;
+            nextBtn.disabled = currentSlideIndex === totalSlides;
+            
+            // 更新指示器
+            const indicators = document.querySelectorAll('.indicator');
+            indicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index + 1 === currentSlideIndex);
+            });
+        }
+
+        // 上一页
+        function previousSlide() {
+            if (currentSlideIndex > 1 && !isTransitioning) {
+                currentSlideIndex--;
+                loadSlide(currentSlideIndex);
+                updateUI();
+            }
+        }
+
+        // 下一页
+        function nextSlide() {
+            if (currentSlideIndex < totalSlides && !isTransitioning) {
+                currentSlideIndex++;
+                loadSlide(currentSlideIndex);
+                updateUI();
+            }
+        }
+
+        // 跳转到指定幻灯片
+        function goToSlide(slideNumber) {
+            if (slideNumber >= 1 && slideNumber <= totalSlides && !isTransitioning && slideNumber !== currentSlideIndex) {
+                currentSlideIndex = slideNumber;
+                loadSlide(currentSlideIndex);
+                updateUI();
+            }
+        }
+
+        // 动态调整iframe内部的.slide样式
+        function adjustSlideSize() {
+            const isFullscreen = document.fullscreenElement;
+            let targetWidth, targetHeight;
+            
+            if (isFullscreen) {
+                // 全屏模式：使用视窗尺寸而不是屏幕尺寸
+                targetWidth = window.innerWidth;
+                targetHeight = window.innerHeight;
+            } else {
+                // 非全屏模式：使用iframe容器尺寸
+                const slideContainer = document.querySelector('.slide-container');
+                if (!slideContainer) return;
+                
+                const containerRect = slideContainer.getBoundingClientRect();
+                targetWidth = containerRect.width;
+                targetHeight = containerRect.height;
+                
+                // 确保最小尺寸
+                targetWidth = Math.max(targetWidth, 320);
+                targetHeight = Math.max(targetHeight, 180);
+            }
+            
+            // 保持16:9比例
+            const aspectRatio = 16 / 9;
+            if (targetWidth / targetHeight > aspectRatio) {
+                targetWidth = targetHeight * aspectRatio;
+            } else {
+                targetHeight = targetWidth / aspectRatio;
+            }
+            
+            // 调整当前活动的iframe内容
+            adjustIframeSlideSize(slideFrame, targetWidth, targetHeight);
+            
+            // 如果预加载iframe有内容，也调整它
+            if (slideFrameNext.src) {
+                adjustIframeSlideSize(slideFrameNext, targetWidth, targetHeight);
+            }
+        }
+        
+        // 调整单个iframe内的.slide样式
+        function adjustIframeSlideSize(iframe, width, height) {
+            try {
+                // 等待iframe加载完成
+                if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+                    const slideElement = iframe.contentDocument.querySelector('.slide');
+                    const slideFrame = document.querySelector('.slide-frame');
+                    if (slideElement) {
+                        slideElement.style.width = width + 'px';
+                        slideElement.style.height = height + 'px';
+                        slideElement.style.transform = 'scale(1)';
+                        slideElement.style.transformOrigin = 'center center';
+                        slideFrame.style.width = width + 'px';
+                        slideFrame.style.height = height + 'px';
+                    }
+                } else {
+                    // 如果iframe还没加载完成，等待加载完成后再调整
+                    iframe.addEventListener('load', function() {
+                        const slideElement = iframe.contentDocument.querySelector('.slide');
+                        const slideFrame = document.querySelector('.slide-frame');
+                        if (slideElement) {
+                            slideElement.style.width = width + 'px';
+                            slideElement.style.height = height + 'px';
+                            slideElement.style.transform = 'scale(1)';
+                            slideElement.style.transformOrigin = 'center center';
+                            slideFrame.style.width = width + 'px';
+                            slideFrame.style.height = height + 'px';
+                        }
+                    }, { once: true });
+                }
+            } catch (error) {
+                // 跨域或其他错误时的处理
+                console.warn('无法访问iframe内容，可能是跨域限制:', error);
+            }
+        }
+        
+        // 全屏模式下应用布局
+        function applyFullscreenLayout() {
+            adjustSlideSize();
+        }
+
+        // 全屏控制栏自动隐藏相关变量
+        let fullscreenControlsTimeout;
+        let isMouseMoving = false;
+
+        // 显示全屏控制栏
+        function showFullscreenControls() {
+            const controls = document.querySelector('.controls');
+            if (document.fullscreenElement && controls) {
+                controls.classList.add('show');
+                clearTimeout(fullscreenControlsTimeout);
+                
+                // 3秒后自动隐藏
+                fullscreenControlsTimeout = setTimeout(() => {
+                    if (!isMouseMoving) {
+                        controls.classList.remove('show');
+                    }
+                }, 3000);
+            }
+        }
+
+        // 隐藏全屏控制栏
+        function hideFullscreenControls() {
+            const controls = document.querySelector('.controls');
+            if (document.fullscreenElement && controls) {
+                controls.classList.remove('show');
+            }
+        }
+
+        // 切换全屏
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                viewerContainer.requestFullscreen().then(() => {
+                    viewerContainer.classList.add('fullscreen');
+                    adjustSlideSize();
+                    
+                    // 初始显示控制栏，然后设置自动隐藏
+                    showFullscreenControls();
+                }).catch(err => {
+                    console.error('无法进入全屏模式:', err);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    viewerContainer.classList.remove('fullscreen');
+                    adjustSlideSize();
+                    
+                    // 清除控制栏隐藏状态
+                    const controls = document.querySelector('.controls');
+                    if (controls) {
+                        controls.classList.remove('show');
+                    }
+                    clearTimeout(fullscreenControlsTimeout);
+                }).catch(err => {
+                    console.error('无法退出全屏模式:', err);
+                });
+            }
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    previousSlide();
+                    break;
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case ' ': // 空格键
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    goToSlide(1);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    goToSlide(totalSlides);
+                    break;
+                case 'Escape':
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
+                    break;
+                case 'f':
+                case 'F':
+                    e.preventDefault();
+                    toggleFullscreen();
+                    break;
+            }
+        });
+
+        // 监听全屏变化
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                viewerContainer.classList.remove('fullscreen');
+                clearTimeout(fullscreenControlsTimeout);
+            }
+            // 全屏状态变化时调整幻灯片尺寸
+            adjustSlideSize();
+        });
+
+        // 全屏模式下的鼠标移动检测
+        let mouseMoveTimeout;
+        document.addEventListener('mousemove', () => {
+            if (document.fullscreenElement) {
+                isMouseMoving = true;
+                showFullscreenControls();
+                
+                // 停止移动后重置标志
+                clearTimeout(mouseMoveTimeout);
+                mouseMoveTimeout = setTimeout(() => {
+                    isMouseMoving = false;
+                }, 500);
+            }
+        });
+
+        // 全屏模式下鼠标离开窗口时隐藏控制栏
+        document.addEventListener('mouseleave', () => {
+            if (document.fullscreenElement) {
+                isMouseMoving = false;
+                hideFullscreenControls();
+            }
+        });
+
+        // 全屏模式下点击空白区域隐藏控制栏
+        document.addEventListener('click', (e) => {
+            if (document.fullscreenElement && !e.target.closest('.controls')) {
+                hideFullscreenControls();
+            }
+        });
+
+        // 处理响应式调整
+        function handleResponsiveResize() {
+            // 窗口大小变化时重新调整幻灯片尺寸
+            adjustSlideSize();
+        }
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', handleResponsiveResize);
+        
+        // 防抖处理，避免频繁调整
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(handleResponsiveResize, 100);
+        });
+
+        // 导出功能相关变量
+        let isExporting = false;
+        
+        // 显示导出进度
+        function showExportProgress(text = '正在导出...') {
+            const exportProgress = document.getElementById('exportProgress');
+            const exportText = document.getElementById('exportText');
+            const exportBarFill = document.getElementById('exportBarFill');
+            const exportPercentage = document.getElementById('exportPercentage');
+            
+            exportText.textContent = text;
+            exportBarFill.style.width = '0%';
+            exportPercentage.textContent = '0%';
+            exportProgress.style.display = 'flex';
+        }
+        
+        // 更新导出进度
+        function updateExportProgress(percentage, text) {
+            const exportText = document.getElementById('exportText');
+            const exportBarFill = document.getElementById('exportBarFill');
+            const exportPercentage = document.getElementById('exportPercentage');
+            
+            if (text) exportText.textContent = text;
+            exportBarFill.style.width = percentage + '%';
+            exportPercentage.textContent = Math.round(percentage) + '%';
+        }
+        
+        // 隐藏导出进度
+        function hideExportProgress() {
+            const exportProgress = document.getElementById('exportProgress');
+            exportProgress.style.display = 'none';
+        }
+        
+        // 禁用/启用导出按钮
+        function toggleExportButtons(disabled) {
+            const exportButtons = document.querySelectorAll('.export-btn');
+            exportButtons.forEach(btn => {
+                btn.disabled = disabled;
+            });
+        }
+        
+        // 捕获单个幻灯片为图片
+        async function captureSlide(slideNumber) {
+            return new Promise((resolve, reject) => {
+                // 创建临时iframe来加载幻灯片
+                const tempIframe = document.createElement('iframe');
+                tempIframe.style.position = 'absolute';
+                tempIframe.style.left = '-9999px';
+                tempIframe.style.width = '1280px';
+                tempIframe.style.height = '720px';
+                tempIframe.style.border = 'none';
+                tempIframe.src = `${slideNumber}.html`;
+                
+                document.body.appendChild(tempIframe);
+                
+                tempIframe.onload = async () => {
+                    try {
+                        // 等待内容完全加载
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        // 临时修改.title样式以确保导出时文字可见
+                        const iframeDoc = tempIframe.contentDocument;
+                        const titleElements = iframeDoc.querySelectorAll('.title');
+                        const originalStyles = [];
+                        
+                        titleElements.forEach((titleEl, index) => {
+                            // 保存原始样式属性（包括内联样式和计算样式）
+                            const computedStyle = iframeDoc.defaultView.getComputedStyle(titleEl);
+                            originalStyles[index] = {
+                                // 保存内联样式
+                                inlineBackground: titleEl.style.background,
+                                inlineBackgroundImage: titleEl.style.backgroundImage,
+                                inlineBackgroundClip: titleEl.style.backgroundClip,
+                                inlineWebkitBackgroundClip: titleEl.style.webkitBackgroundClip,
+                                inlineColor: titleEl.style.color,
+                                // 保存计算样式作为备份
+                                computedBackground: computedStyle.background,
+                                computedBackgroundImage: computedStyle.backgroundImage,
+                                computedBackgroundClip: computedStyle.backgroundClip,
+                                computedWebkitBackgroundClip: computedStyle.webkitBackgroundClip,
+                                computedColor: computedStyle.color,
+                                // 保存原始className以便完全恢复
+                                originalClassName: titleEl.className
+                            };
+                            
+                            // 设置为纯色文字，保持原有的字体样式
+                            titleEl.style.background = 'none';
+                            titleEl.style.backgroundImage = 'none';
+                            titleEl.style.backgroundClip = 'initial';
+                            titleEl.style.webkitBackgroundClip = 'initial';
+                            titleEl.style.color = '#ffffff'; // 白色文字，确保在深色背景上可见
+                        });
+                        
+                        // 等待样式应用
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        
+                        // 使用html2canvas捕获iframe内容
+                        const canvas = await html2canvas(tempIframe.contentDocument.body, {
+                            width: 1280,
+                            height: 720,
+                            scale: 1,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: '#ffffff'
+                        });
+                        
+                        // 完全恢复原始样式
+                        titleElements.forEach((titleEl, index) => {
+                            const original = originalStyles[index];
+                            
+                            // 清除所有内联样式
+                            titleEl.style.background = '';
+                            titleEl.style.backgroundImage = '';
+                            titleEl.style.backgroundClip = '';
+                            titleEl.style.webkitBackgroundClip = '';
+                            titleEl.style.color = '';
+                            
+                            // 如果原来有内联样式，则恢复
+                            if (original.inlineBackground) titleEl.style.background = original.inlineBackground;
+                            if (original.inlineBackgroundImage) titleEl.style.backgroundImage = original.inlineBackgroundImage;
+                            if (original.inlineBackgroundClip) titleEl.style.backgroundClip = original.inlineBackgroundClip;
+                            if (original.inlineWebkitBackgroundClip) titleEl.style.webkitBackgroundClip = original.inlineWebkitBackgroundClip;
+                            if (original.inlineColor) titleEl.style.color = original.inlineColor;
+                            
+                            // 确保className没有被修改
+                            titleEl.className = original.originalClassName;
+                        });
+                        
+                        document.body.removeChild(tempIframe);
+                        resolve(canvas);
+                    } catch (error) {
+                        document.body.removeChild(tempIframe);
+                        reject(error);
+                    }
+                };
+                
+                tempIframe.onerror = () => {
+                    document.body.removeChild(tempIframe);
+                    reject(new Error(`无法加载幻灯片 ${slideNumber}`));
+                };
+            });
+        }
+        
+        // 导出为PDF
+        async function exportToPDF() {
+            if (isExporting) return;
+            
+            isExporting = true;
+            toggleExportButtons(true);
+            showExportProgress('正在准备PDF导出...');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'px',
+                    format: [1280, 720]
+                });
+                
+                for (let i = 1; i <= totalSlides; i++) {
+                    updateExportProgress((i - 1) / totalSlides * 90, `正在处理第 ${i} 页...`);
+                    
+                    try {
+                        const canvas = await captureSlide(i);
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        
+                        if (i > 1) {
+                            pdf.addPage();
+                        }
+                        
+                        pdf.addImage(imgData, 'JPEG', 0, 0, 1280, 720);
+                    } catch (error) {
+                        console.error(`处理第 ${i} 页时出错:`, error);
+                        // 继续处理下一页
+                    }
+                }
+                
+                updateExportProgress(95, '正在生成PDF文件...');
+                
+                // 保存PDF
+                pdf.save('幻灯片演示.pdf');
+                
+                updateExportProgress(100, '导出完成！');
+                setTimeout(() => {
+                    hideExportProgress();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('PDF导出失败:', error);
+                alert('PDF导出失败，请重试。');
+                hideExportProgress();
+            } finally {
+                isExporting = false;
+                toggleExportButtons(false);
+            }
+        }
+        
+        // 导出为PPT
+        async function exportToPPT() {
+            if (isExporting) return;
+            
+            isExporting = true;
+            toggleExportButtons(true);
+            showExportProgress('正在准备PPT导出...');
+            
+            try {
+                const pptx = new PptxGenJS();
+                pptx.layout = 'LAYOUT_16x9';
+                
+                for (let i = 1; i <= totalSlides; i++) {
+                    updateExportProgress((i - 1) / totalSlides * 90, `正在处理第 ${i} 页...`);
+                    
+                    try {
+                        const canvas = await captureSlide(i);
+                        const imgData = canvas.toDataURL('image/png');
+                        
+                        const slide = pptx.addSlide();
+                        slide.addImage({
+                            data: imgData,
+                            x: 0,
+                            y: 0,
+                            w: '100%',
+                            h: '100%'
+                        });
+                    } catch (error) {
+                        console.error(`处理第 ${i} 页时出错:`, error);
+                        // 继续处理下一页
+                    }
+                }
+                
+                updateExportProgress(95, '正在生成PPT文件...');
+                
+                // 保存PPT
+                await pptx.writeFile({ fileName: '幻灯片演示.pptx' });
+                
+                updateExportProgress(100, '导出完成！');
+                setTimeout(() => {
+                    hideExportProgress();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('PPT导出失败:', error);
+                alert('PPT导出失败，请重试。');
+                hideExportProgress();
+            } finally {
+                isExporting = false;
+                toggleExportButtons(false);
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

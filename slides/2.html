@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目录 - Prompt魔法师：从实践到创造，我的AI指令探索之旅</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #0a2463, #1e3a8a);
+            color: white;
+            overflow: hidden;
+        }
+        .slide {
+            width: 1280px;
+            height: 720px;
+            position: relative;
+            overflow: hidden;
+        }
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/ai-tech-pattern.jpg');
+            background-size: cover;
+            opacity: 0.08;
+            z-index: 0;
+        }
+        .content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 60px 80px;
+        }
+        .header {
+            margin-bottom: 50px;
+        }
+        .title {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffffff, #a5d8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .subtitle {
+            font-size: 20px;
+            color: #e0f2fe;
+            opacity: 0.8;
+        }
+        .toc-container {
+            display: flex;
+            flex-grow: 1;
+        }
+        .toc-list {
+            width: 100%;
+        }
+        .toc-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            transition: transform 0.3s;
+        }
+        .toc-item:hover {
+            transform: translateX(10px);
+        }
+        .toc-number {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 2px solid #3b82f6;
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: bold;
+            margin-right: 30px;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        .toc-text {
+            font-size: 24px;
+            font-weight: 500;
+        }
+        .toc-icon {
+            margin-left: 15px;
+            color: #a5d8ff;
+            font-size: 20px;
+        }
+        .decorative-element {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(165, 216, 255, 0.05);
+            z-index: 0;
+        }
+        .decorative-element-1 {
+            width: 400px;
+            height: 400px;
+            top: -200px;
+            right: -200px;
+        }
+        .decorative-element-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -150px;
+            left: -150px;
+        }
+        .highlight-box {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <div class="background-overlay"></div>
+        
+        <div class="decorative-element decorative-element-1"></div>
+        <div class="decorative-element decorative-element-2"></div>
+        
+        <div class="content">
+            <div class="header">
+                <h1 class="title">目录</h1>
+                <p class="subtitle">探索Prompt工程的旅程</p>
+            </div>
+            
+            <div class="toc-container">
+                <div class="toc-list">
+                    <div class="toc-item">
+                        <div class="toc-number">1</div>
+                        <div class="toc-text">开篇介绍</div>
+                        <i class="fas fa-book-open toc-icon"></i>
+                    </div>
+                    
+                    <div class="toc-item">
+                        <div class="toc-number">2</div>
+                        <div class="toc-text">实践出真知：跟着教程实操prompt技巧</div>
+                        <i class="fas fa-tools toc-icon"></i>
+                    </div>
+                    
+                    <div class="toc-item">
+                        <div class="toc-number">3</div>
+                        <div class="toc-text">创造永无界：prompt赋能创意实现</div>
+                        <i class="fas fa-lightbulb toc-icon"></i>
+                    </div>
+                    
+                    <div class="toc-item">
+                        <div class="toc-number">4</div>
+                        <div class="toc-text">更多资源推荐</div>
+                        <i class="fas fa-bookmark toc-icon"></i>
+                    </div>
+                    
+                    <div class="toc-item">
+                        <div class="toc-number">5</div>
+                        <div class="toc-text">总结与展望</div>
+                        <i class="fas fa-flag-checkered toc-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="highlight-box">
+            <span class="text-sm">Prompt工程 | 实践与创造</span>
+        </div>
+    </div>
+</body>
+</html>

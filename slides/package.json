@@ -1,0 +1,33 @@
+{
+  "name": "slide-viewer",
+  "version": "1.0.0",
+  "description": "一个功能完整的幻灯片查看器，支持导航、全屏、导出PDF/PPT等功能",
+  "main": "slide-viewer.html",
+  "scripts": {
+    "start": "python3 -m http.server 9000",
+    "dev": "python3 -m http.server 9000",
+    "serve": "python3 -m http.server 3000",
+    "preview": "open http://localhost:9000/slide-viewer.html",
+    "build": "echo 'Static HTML project - no build required'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "slideshow",
+    "presentation",
+    "html",
+    "viewer",
+    "pdf-export",
+    "ppt-export"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

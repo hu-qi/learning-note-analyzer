@@ -1,0 +1,33 @@
+# 核心依赖
+pandas>=1.5.0
+requests>=2.28.0
+openai>=1.0.0
+python-dotenv>=0.19.0
+PyYAML>=6.0
+
+# 数据处理
+numpy>=1.21.0
+
+# 日志和配置
+coloredlogs>=15.0
+
+# HTTP请求增强
+requests-toolbelt>=0.10.0
+urllib3>=1.26.0
+
+# 时间处理
+python-dateutil>=2.8.0
+
+# 文件处理
+chardet>=5.0.0
+
+# 开发和测试依赖（可选）
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+# mypy>=0.991
+
+# 文档生成（可选）
+# sphinx>=5.0.0
+# sphinx-rtd-theme>=1.0.0

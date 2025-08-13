@@ -1,0 +1,200 @@
+# 示例配置文件
+# 复制此文件为 config.yaml 并根据需要修改配置
+
+# 应用程序基本信息
+app:
+  name: "学习笔记分析系统"
+  version: "1.0.0"
+  description: "集成文章爬虫、学习笔记分析和评分分析的综合系统"
+
+# 数据目录配置
+data:
+  base_dir: "data"
+  spider_data_dir: "data"
+  analyzer_data_dir: "data"
+  score_analyzer_data_dir: "data"
+  backup_dir: "data/backup"
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_enabled: true
+  file_path: "logs/app.log"
+  console_enabled: true
+  max_file_size: "10MB"
+  backup_count: 5
+
+# 爬虫模块配置
+spider:
+  # 默认请求配置
+  default_headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  
+  # 请求超时设置（秒）
+  timeout: 30
+  
+  # 重试配置
+  max_retries: 3
+  retry_delay: 1
+  
+  # 增量爬取配置
+  incremental:
+    enabled: true
+    history_file: "crawl_history.json"
+    max_history_size: 10000
+  
+  # 批量爬取配置
+  batch:
+    max_workers: 5
+    delay_between_requests: 1
+  
+  # 数据保存配置
+  output:
+    save_json: true
+    save_csv: true
+    encoding: "utf-8"
+
+# 学习笔记分析模块配置
+analyzer:
+  # 大模型配置
+  llm:
+    model: "deepseek-v3"  # 或其他支持的模型
+    max_tokens: 500
+    temperature: 0.3
+    timeout: 30
+    max_retries: 3
+    retry_delay: 1
+  
+  # 评分配置
+  scoring:
+    enabled: true
+    api_delay: 1  # API调用间隔（秒），避免频率限制
+    content_max_length: 1000  # 发送给大模型的内容最大长度
+    default_score: 60  # 当API不可用时的默认分数
+  
+  # 分析配置
+  analysis:
+    filter_keywords: [
+                '【0726-DAY1学习笔记】',
+                '【0727-DAY2学习笔记】', 
+                '【0728-DAY3学习笔记】',
+                '【0729-DAY4学习笔记】',
+                '【5天学习分享】',
+                '【0731-DAY6学习笔记】',
+                '【0801-DAY7学习笔记】',
+                '【8天学习分享】',
+                '【0803-DAY9学习笔记】',
+                '【0804-DAY10学习笔记】',
+                '【0805-DAY11学习笔记】',
+                '【十天成长计划】',
+            ]  # 筛选学习笔记的关键词
+    min_content_length: 10  # 最小内容长度
+  
+  # 报告配置
+  report:
+    top_n: 10  # 显示前N名
+    save_detailed: true
+    export_csv: true
+
+# 评分分析模块配置
+score_analyzer:
+  # 数据源配置
+  data_source:
+    csv_file: "data/note_scores_report.csv"
+    encoding: "utf-8"
+  
+  # 排序配置
+  sorting:
+    default_method: "checkin_and_score"  # 默认排序方式
+    available_methods:
+      - "checkin_and_score"  # 按打卡次数和平均分
+      - "avg_score"          # 按平均分
+      - "total_score"        # 按总分
+      - "checkin_count"      # 按打卡次数
+  
+  # 报告配置
+  report:
+    top_n: 10
+    show_detailed: true
+    export_formats: ["csv"]
+
+# 环境变量配置（这些值会被实际的环境变量覆盖）
+env:
+  # OpenAI API配置 - 请在 .env 文件中设置实际值
+  openai_api_key: "your-openai-api-key-here"
+  openai_base_url: "https://api.modelarts-maas.com/v1"
+  
+  # 如果使用其他大模型服务，可以在这里配置
+  # custom_llm_api_key: "your-custom-api-key"
+  # custom_llm_base_url: "https://your-custom-api.com/v1"
+
+# CLI配置
+cli:
+  # 默认命令
+  default_command: "help"
+  
+  # 可用命令
+  commands:
+    spider:
+      description: "运行文章爬虫"
+      aliases: ["crawl", "fetch"]
+    
+    analyzer:
+      description: "运行学习笔记分析"
+      aliases: ["analyze", "analysis"]
+    
+    score_analyzer:
+      description: "运行评分分析"
+      aliases: ["score", "ranking"]
+    
+    all:
+      description: "运行所有模块"
+      aliases: ["full", "complete"]
+
+# 性能配置
+performance:
+  # 内存限制
+  max_memory_usage: "1GB"
+  
+  # 并发配置
+  max_concurrent_tasks: 10
+  
+  # 缓存配置
+  cache:
+    enabled: true
+    ttl: 3600  # 缓存生存时间（秒）
+    max_size: 1000  # 最大缓存条目数
+
+# 安全配置
+security:
+  # API密钥加密
+  encrypt_api_keys: false
+  
+  # 数据备份
+  auto_backup: true
+  backup_interval: 86400  # 24小时（秒）
+  
+  # 敏感数据处理
+  mask_sensitive_data: true
+
+# 自定义配置示例
+# 您可以根据需要添加自己的配置项
+custom:
+  # 爬虫特定配置
+  spider_configs:
+    # 示例：特定网站的配置
+    example_site:
+      base_url: "https://example.com"
+      cookies: "your-cookies-here"
+      headers:
+        Referer: "https://example.com"
+  
+  # 分析特定配置
+  analysis_rules:
+    # 示例：自定义评分规则
+    scoring_weights:
+      content_quality: 0.4
+      learning_insights: 0.3
+      clarity: 0.2
+      practicality: 0.1
