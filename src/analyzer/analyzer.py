@@ -296,34 +296,78 @@ class LearningNoteAnalyzer:
         
         try:
             # 构建评分提示
-            prompt = f"""
-请对以下学习笔记进行评分（0-100分），并给出简短评语。
+            system_prompt = """
+你是一个顶级的AI教育评估助手，被设计用来精确、客观且一致地评估学习笔记。
 
-标题：{title}
-内容：{content[:1000]}  # 限制内容长度
+你的核心任务遵循一个固定的工作流程：
+1.  **深入分析 (Analyze)**：仔细阅读用户提供的学习笔记全文，识别其核心论点、论据、结构和个人见解。
+2.  **分步评估 (Step-by-Step Evaluation)**：在内心（不要在最终输出中展示）根据以下`<scoring_rubric>`（评分标准）对笔记进行逐项评估。对于每个维度，你都需要找到笔记中的具体证据来支撑你的分数。
+3.  **自我核验 (Self-Correction/Verification)**：在形成最终结论前，检查各分项得分之和是否等于总分。同时，确保评语、优缺点和摘要之间不存在矛盾。
+4.  **格式化输出 (Format Output)**：将所有评估结果严格按照`<output_format>`所定义的JSON结构进行封装，确保没有任何遗漏或格式错误。
 
-评分标准：
-1. 内容质量和深度（40分）
-2. 学习收获和思考（30分）
-3. 表达清晰度（20分）
-4. 实用性和可操作性（10分）
+<scoring_rubric>
+- **内容质量和深度 (content_quality: 40分)**
+  - 31-40分：内容丰富深入，观点独到，分析透彻，信息量大。
+  - 21-30分：内容较为全面，有一定深度，分析较为合理。
+  - 11-20分：内容基本完整，但深度不足，分析不够深入。
+  - 0-10分：内容浅显，缺乏核心要点，信息量不足。
+- **学习收获和思考 (learning_insights: 30分)**
+  - 24-30分：思考深刻，收获丰富，有独到见解，体现深度学习。
+  - 16-23分：思考较为深入，收获明显，有一定个人见解。
+  - 8-15分：有基本思考，但收获有限，缺乏深度反思。
+  - 0-7分：缺乏个人思考和收获，仅为内容复述。
+- **表达清晰度 (clarity: 20分)**
+  - 16-20分：表达非常清晰，结构严谨，逻辑性强，层次分明。
+  - 11-15分：表达清晰，结构合理，逻辑性较强。
+  - 6-10分：表达基本清晰，但结构欠佳，逻辑性一般。
+  - 0-5分：表达混乱，结构不清，难以理解。
+- **实用性和可操作性 (practicality: 10分)**
+  - 9-10分：实用性很强，可操作性强，可直接应用指导实践。
+  - 6-8分：实用性较好，有一定可操作性，可部分应用。
+  - 3-5分：有一定实用性，但可操作性不强。
+  - 0-2分：缺乏实用性，无法指导实践。
+</scoring_rubric>
 
-请以JSON格式返回结果：
+<output_format>
 {{
-    "score": 分数（整数），
-    "comment": "评语内容"
+  "score": "整数，0-100分，必须等于下面四项得分之和",
+  "comment": "字符串，150-300字。综合评语，先总结整体表现，然后点明核心优点和最关键的改进建议。",
+  "detailed_scores": {{
+    "content_quality": "整数，0-40分",
+    "learning_insights": "整数，0-30分",
+    "clarity": "整数，0-20分",
+    "practicality": "整数，0-10分"
+  }},
+  "strengths": [
+    "字符串数组，列出3个最主要的优点，语言精炼，每个优点都是一句话。"
+  ],
+  "improvements": [
+    "字符串数组，提供3条具体、可操作的改进建议，每个建议都是一句话。"
+  ],
+  "content_summary": "字符串，50-100字。对笔记的核心内容进行精准摘要。"
 }}
+</output_format>
+"""
+            user_prompt = f"""
+请根据你被设定的工作流程，评估以下学习笔记。
+
+<note>
+<title>{title}</title>
+<content>
+{content}
+</content>
+</note>
 """
             
             # 调用大模型API
             response = self.client.chat.completions.create(
                 model="deepseek-v3",
                 messages=[
-                    {"role": "system", "content": "你是一个专业的学习笔记评分专家，请客观公正地评分。"},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ],
-                max_tokens=500,
-                temperature=0.3 # 
+                max_tokens=2048,
+                temperature=0.1,  # 保持0.1-0.2的低温，确保评分的稳定性和客观性
             )
             
             result_text = response.choices[0].message.content.strip()
@@ -419,10 +463,10 @@ class LearningNoteAnalyzer:
             task_name = note.get('standardized_task_name', 'Unknown')  # 使用标准化的任务名称
             content = note.get('content_summary', '')
             title = note.get('title', 'Unknown')
-            note_id = note.get('id', '')
+            note_id = note.get('topic_id', '')
             
             # 构建笔记链接
-            note_link = f"https://bbs.huaweicloud.com/forum/thread-{note_id}-1-1.html" if note_id else ''
+            note_link = f"https://www.hiascend.com/forum/thread-{note_id}-1-1.html" if note_id else ''
             
             self.logger.info(f"正在评分第 {i+1}/{len(self.learning_notes)} 篇笔记: {title}")
             
