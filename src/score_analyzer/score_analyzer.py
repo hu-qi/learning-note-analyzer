@@ -276,7 +276,7 @@ class ScoreAnalyzer:
                 })
             
             result_df = pd.DataFrame(results)
-            save_csv(result_df, output_file)
+            save_csv(output_file, result_df.to_dict('records'))
             
             self.logger.info(f"分析结果已保存到: {output_file}")
             
@@ -335,7 +335,7 @@ class ScoreAnalyzer:
             overall_stats = report['overall_stats']
             overall_df = pd.DataFrame([overall_stats])
             overall_file = os.path.join(output_dir, 'overall_stats.csv')
-            save_csv(overall_df, overall_file)
+            save_csv(overall_file, overall_df.to_dict('records'))
             output_files['overall_stats'] = overall_file
             
             # 3. 保存前10名详细信息
@@ -360,7 +360,7 @@ class ScoreAnalyzer:
             if top_details:
                 top_df = pd.DataFrame(top_details)
                 top_file = os.path.join(output_dir, 'top_performers_detailed.csv')
-                save_csv(top_df, top_file)
+                save_csv(top_file, top_df.to_dict('records'))
                 output_files['top_performers'] = top_file
             
             self.logger.info(f"详细报告已导出到 {output_dir} 目录")

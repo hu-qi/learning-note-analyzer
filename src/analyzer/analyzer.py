@@ -322,8 +322,8 @@ class LearningNoteAnalyzer:
                     {"role": "system", "content": "你是一个专业的学习笔记评分专家，请客观公正地评分。"},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=-1,
-                temperature=0
+                max_tokens=500,
+                temperature=0.3 # 
             )
             
             result_text = response.choices[0].message.content.strip()
